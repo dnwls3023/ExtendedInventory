@@ -143,6 +143,13 @@ public:
 };
 
 int main(void) {
+	/*
+		바로 해야하는 것--
+		수정은 했지만 더 손볼것은 드롭 확률이다.
+		따라서 DropItems 리스트에 Item 객체 뿐만 아니라 
+		int형 변수를 하나 더 넣어서 드롭 확률을 넣어준다.
+	
+	*/
 	vector<Item> zombie_drop_items;
 	// 아이템 생성
 	ItemHandler IH;
