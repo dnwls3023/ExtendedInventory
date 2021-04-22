@@ -4,7 +4,7 @@ using namespace std;
 
 /*
 	 ***last update 2021-04-21***
-	 인벤토리 위주로 구현
+	 인벤토리 위주로 구현 , 목표
 	 기능 1 : 인벤토리를 구현한다.
 	 기능 2 : 인벤토리를 종류별로 나눈다.
 	 기능 3 : 몬스터를 구현한 뒤, 이 몬스터를 잡았을 때 아이템을 드롭시키고
@@ -12,7 +12,6 @@ using namespace std;
 	 기능 4 : 아이템을 소모성으로 제작하여 소모할 수 있게 만든다. (ex 하급 포션 : 50의 hp를 회복한다.)
 
  */
-
 
 class Item {
 private:
@@ -22,9 +21,13 @@ private:
 	int id;
 	// 아이템 설명
 	string description;
+	// 소모성 아이템인가?
+	bool isUsed;
+	// 아이템 종류
+	string type;
 public:
-	Item(string _name, int _id, string _description)
-		:name(_name), id(_id), description(_description) {}
+	Item(string _name, int _id, string _description,bool _isUsed,string _type)
+		:name(_name), id(_id), description(_description), isUsed(_isUsed),type(_type) {}
 
 	string getName() { return name; }
 	int getId() { return id; }
@@ -36,7 +39,7 @@ public:
 		cout << description << endl;
 		cout << endl;
 	}
-
+	string getItemType() { return type; }
 
 };
 
@@ -45,8 +48,8 @@ private:
 	vector<Item> list;
 public:
 	// 아이템 한개를 추가한다.
-	void createItem(string _name,int id,string _desc) {
-		Item tmp(_name, id, _desc);
+	void createItem(string _name, int id, string _desc,bool _isUsed,string _type) {
+		Item tmp(_name, id, _desc,_isUsed,_type);
 		list.push_back(tmp);
 	}
 	// 아이템 다수를 추가한다.
@@ -75,7 +78,7 @@ public:
 			}
 		}
 		cout << "유효하지 않은 아이디 값입니다." << endl;
-		return Item("NULL", -1, "NULL");
+		return Item("NULL", -1, "NULL",false,"NULL");
 	}
 
 	// 존재하는 모든 아이템을 출력한다.
@@ -88,22 +91,35 @@ public:
 
 
 class Inventory {
-private:
-	vector<Item> list;
+protected:
+	// 아이템 종류 , 갯수
+	vector<pair<Item,int> > list;
 public:
 	// 가지고 있는 모든 아이템을 출력한다.
 	void printAllInventory() {
+		cout << endl;
 		for (int i = 0; i < list.size(); ++i) {
-			cout << i + 1 << ". " << list[i].getName() << " ";
+			cout << i + 1 << ", " << list[i].first.getName() << " ";
+		}
+		cout << "아이템 설명을 원한다면 d를 입력하세요.  종료를 원하면 아무거나 누르세요. " << endl;
+		char key;
+		cin >> key;
+		if (key == 'd') {
+			printItemInfo();
+		}
+		else {
+			return;
 		}
 		cout << endl;
 	}
 	// 아이템 설명을 출력한다.
+	
 	void printItemInfo() {
 		int idx;
+		cout << endl; cout << "아이템 출력 창 왼쪽 숫자를 입력하면 원하는 설명이 나옵니다." << endl;
 		cin >> idx;
 		if (0 <= idx && idx <= list.size()) {
-			list[idx - 1].printDescription();
+			list[idx - 1].first.printDescription();
 		}
 
 		else
@@ -111,9 +127,9 @@ public:
 	}
 
 	// 아이템을 얻는다.
-	void getItem(Item _item) {
+	void getItem(Item _item,int value) {
 		if (_item.getId() == -1) return;
-		list.push_back(_item);
+		list.push_back({ _item,value });
 	}
 };
 
@@ -123,41 +139,75 @@ private:
 	int hp;
 
 public:
+	void useItem(Item _item, int value) {
+		int id = _item.getId();
+		if (id == -1) return;
+		if (_item.getItemType() == "potion") {
+			for (int i = 0; i < list.size(); ++i) {
+				if (list[i].first.getId() == id) {
+					if (list[i].second > 1) {
+						list[i].second--;
+						if (id == 1) hp += 50;
+					}
+					else if (list[i].second == 1) {
+						//q 벡터를 제거
+					}
+				}
+			}
+		}
+		else {
+			cout << "사용할 수 없는 아이템 종류입니다." << endl;
+		}
+	}
 };
 
 class Monster {
 protected:
 	int hp;
-	vector<Item> DropItems;
+	vector<pair<int,Item> > DropItems;
 public:
-	Monster(int _hp,vector<Item> _dropitem) : hp(_hp) {
-		for(int i =0;i<_dropitem.size();++i)
+	Monster(int _hp, vector<pair<int,Item> > _dropitem) : hp(_hp) {
+		for (int i = 0; i < _dropitem.size(); ++i)
 			DropItems.push_back(_dropitem[i]);
+	}
+
+	void printDropItems() {
+		for (int i = 0; i < DropItems.size(); ++i) {
+			cout << " 아이템 이름 : " << DropItems[i].second.getName()
+				<< ", " << " 드롭확률 : " << DropItems[i].first << "%" << endl;
+		}
 	}
 };
 
 class Zombie : public Monster {
 private:
 public:
-	Zombie(int _hp,vector<Item> _dropitem):Monster(_hp,_dropitem){}
+	Zombie(int _hp, vector<pair<int, Item> > _dropitem) :Monster(_hp, _dropitem) {}
+	void printDropItems() {
+		cout << "<<--Zombie 드롭 아이템, 드롭률 -->> " << endl;
+		Monster::printDropItems();
+		cout << endl;
+	}
 };
 
 int main(void) {
-	/*
-		바로 해야하는 것--
-		수정은 했지만 더 손볼것은 드롭 확률이다.
-		따라서 DropItems 리스트에 Item 객체 뿐만 아니라 
-		int형 변수를 하나 더 넣어서 드롭 확률을 넣어준다.
-	
-	*/
-	vector<Item> zombie_drop_items;
+	string type[3] = { "potion","normal","equipment" };
+
+
+	vector<pair<int,Item> > zombie_drop_items;
 	// 아이템 생성
 	ItemHandler IH;
-	IH.createItem("하급 포션", 1, "이 포션을 마시면 50의 hp를 회복할 수 있다.");
+	int item_cnt = 0;
+	IH.createItem("하급 포션", ++item_cnt, "이 포션을 마시면 50의 hp를 회복할 수 있다.",true,type[0]);
 	Player player;
-	player.getItem(IH.findItem(1));
+	player.getItem(IH.findItem(1),10);
 	player.printAllInventory();
 	player.printItemInfo();
-	zombie_drop_items.push_back(IH.findItem(1));
+
+	zombie_drop_items.push_back({ 33,IH.findItem(1) });
+
+	Zombie zom(20,zombie_drop_items);
+	zom.printDropItems();
+	
 	return 0;
 }
